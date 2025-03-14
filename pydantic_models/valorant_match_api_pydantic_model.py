@@ -114,8 +114,8 @@ class BehaviorFactors(BaseModel):
     collisions: float
     commsRatingRecovery: int
     damageParticipationOutgoing: int
-    friendlyFireIncoming: int
-    friendlyFireOutgoing: int
+    friendlyFireIncoming: float
+    friendlyFireOutgoing: float
     mouseMovement: int
     selfDamage: float
     stayedInSpawnRounds: float

@@ -11,7 +11,8 @@ from sqlalchemy.dialects.postgresql import insert
 
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, filename='logs/application.log', filemode='a')
+# logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Import your SQLAlchemy ORM models.
@@ -30,38 +31,68 @@ from pydantic_models.valorant_match_api_pydantic_model import ValorantMatchAPIMo
 
 
 def update_matches(session, validated_data: ValorantMatchAPIModel):
+    """
+    Update match records in the database.
+
+    This function checks if a match with the given match_id already exists in the database.
+    If it does not exist, it adds a new match record to the session. If it exists, it logs
+    that the match data already exists.
+
+    Args:
+        session (Session): The SQLAlchemy session object used for database operations.
+        validated_data (ValorantMatchAPIModel): The validated data model containing match information.
+
+    Returns:
+        bool: True if a new match record was added, False if the match already exists.
+    """
 
     logger.info("Updating matches with match_id: %s", validated_data.matchInfo.matchId)
     mi = validated_data.matchInfo
-    match_row = Matches(
-        match_id=mi.matchId,
-        map_id=mi.mapId,
-        game_pod_id=mi.gamePodId,
-        game_loop_zone=mi.gameLoopZone,
-        game_server_address=mi.gameServerAddress,
-        game_version=mi.gameVersion,
-        game_length_millis=mi.gameLengthMillis,
-        game_start_millis=mi.gameStartMillis,
-        provisioning_flow_id=mi.provisioningFlowID,
-        is_completed=mi.isCompleted,
-        custom_game_name=mi.customGameName,
-        force_post_processing=mi.forcePostProcessing,
-        queue_id=mi.queueID,
-        game_mode=mi.gameMode,
-        is_ranked=mi.isRanked,
-        is_match_sampled=mi.isMatchSampled,
-        season_id=mi.seasonId,
-        completion_state=mi.completionState,
-        platform_type=mi.platformType,
-        should_match_disable_penalties=mi.shouldMatchDisablePenalties,
-        region=validated_data.region if validated_data.region is not None else ""
-    )
-    session.add(match_row)
-    session.flush() #Get the match_id which serves as foreign key
-    # session.commit()
-    logger.info("Match data added to the session for match_id: %s", mi.matchId)
+
+    existing_match = session.query(Matches).filter_by(match_id=mi.matchId).first() #Check if the entity exists
+    if existing_match is None:
+        match_row = Matches(
+            match_id=mi.matchId,
+            map_id=mi.mapId,
+            game_pod_id=mi.gamePodId,
+            game_loop_zone=mi.gameLoopZone,
+            game_server_address=mi.gameServerAddress,
+            game_version=mi.gameVersion,
+            game_length_millis=mi.gameLengthMillis,
+            game_start_millis=mi.gameStartMillis,
+            provisioning_flow_id=mi.provisioningFlowID,
+            is_completed=mi.isCompleted,
+            custom_game_name=mi.customGameName,
+            force_post_processing=mi.forcePostProcessing,
+            queue_id=mi.queueID,
+            game_mode=mi.gameMode,
+            is_ranked=mi.isRanked,
+            is_match_sampled=mi.isMatchSampled,
+            season_id=mi.seasonId,
+            completion_state=mi.completionState,
+            platform_type=mi.platformType,
+            should_match_disable_penalties=mi.shouldMatchDisablePenalties,
+            region=validated_data.region if validated_data.region is not None else ""
+        )
+        session.add(match_row)
+        session.flush() #Get the match_id which serves as foreign key
+        # session.commit()
+        logger.info("Match data added to the session for match_id: %s", mi.matchId)
+        return True
+    else:
+        logger.info("Match data already exists for match_id: %s", mi.matchId)
+        return False
+    
+
 
 def update_premier_match_info(session, validated_data: ValorantMatchAPIModel):
+    """
+    Updates the premier match information in the database.
+
+    Args:
+        session (Session): The SQLAlchemy session object used for database operations.
+        validated_data (ValorantMatchAPIModel): The validated data model containing match information.
+    """
     logger.info("Updating premier match info for match_id: %s", validated_data.matchInfo.matchId)
     
     pmi = validated_data.matchInfo.premierMatchInfo
@@ -469,23 +500,27 @@ def update_teams(session, validated_data: ValorantMatchAPIModel):
 def load_valorant_data_to_database(Session,validated_data):
 
     session = Session()
-    # Setup the SQLAlchemy engine and session
     success_flag=0
     try:
-        update_matches(session, validated_data)
-        update_premier_match_info(session, validated_data)
-        update_party_rr_penalties(session, validated_data)
-        update_coaches(session, validated_data)
-        update_kills(session, validated_data)
-        update_players(session, validated_data)
-        update_round_results(session, validated_data)
-        update_teams(session, validated_data)
+        if update_matches(session, validated_data): #This function returns True if the matchID is unique and has been updated, else returns False if the matchID already exists
+            update_premier_match_info(session, validated_data)
+            update_party_rr_penalties(session, validated_data)
+            update_coaches(session, validated_data)
+            update_kills(session, validated_data)
+            update_players(session, validated_data)
+            update_round_results(session, validated_data)
+            update_teams(session, validated_data)
+            logger.info(f"Data successfully loaded into the database for match id- {validated_data.matchInfo.matchId}")
+            print(f"Data successfully loaded into the database for match id- {validated_data.matchInfo.matchId}")
+        else:
+            logger.info(f"Data already exists in the database for match id- {validated_data.matchInfo.matchId}")
+            print(f"Data already exists in the database for match id- {validated_data.matchInfo.matchId}")
         success_flag=1
-        logger.info("Data successfully loaded into the database.")
         
     except SQLAlchemyError as e:
         session.rollback()
-        logger.error(f"Database error: {e}")
+        logger.error(f"Database error for match id- {validated_data.matchInfo.matchId}: {e}")
+        print(f"Database error for match id- {validated_data.matchInfo.matchId}: {e}")
 
     finally:
         session.commit() #If there were no exceptions, commit everything to the database. If there was an exception, nothing will be committed
