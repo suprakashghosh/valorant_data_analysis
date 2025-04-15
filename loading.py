@@ -9,10 +9,13 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import insert
 
+# Import the validated Pydantic model
+from pydantic_models.valorant_match_api_pydantic_model import ValorantMatchAPIModel
+
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, filename='logs/application.log', filemode='a')
-# logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO, filename='logs/application.log', filemode='a')
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Import your SQLAlchemy ORM models.
@@ -26,8 +29,7 @@ from sqlalchemy_models.sqlalchemy_models import (
     RoundAbilityEffects, Teams
 )
 
-# Import the validated Pydantic model
-from pydantic_models.valorant_match_api_pydantic_model import ValorantMatchAPIModel
+
 
 
 def update_matches(session, validated_data: ValorantMatchAPIModel):
@@ -239,20 +241,38 @@ def update_players(session, validated_data: ValorantMatchAPIModel):
         # Insert player_match_stats
         pms = player.stats
         ac = pms.abilityCasts
-        stats_row = PlayerMatchStats(
-            match_id=validated_data.matchInfo.matchId,
-            subject=player.subject,
-            score=pms.score,
-            rounds_played=pms.roundsPlayed,
-            kills=pms.kills,
-            deaths=pms.deaths,
-            assists=pms.assists,
-            playtime_millis=pms.playtimeMillis,
-            match_grenade_casts=ac.grenadeCasts or 0,
-            match_ability1_casts=ac.ability1Casts or 0,
-            match_ability2_casts=ac.ability2Casts or 0,
-            match_ultimate_casts=ac.ultimateCasts or 0
-        )
+
+        if ac is None:
+            stats_row = PlayerMatchStats(
+                match_id=validated_data.matchInfo.matchId,
+                subject=player.subject,
+                score=pms.score,
+                rounds_played=pms.roundsPlayed,
+                kills=pms.kills,
+                deaths=pms.deaths,
+                assists=pms.assists,
+                playtime_millis=pms.playtimeMillis,
+                match_grenade_casts= 0,
+                match_ability1_casts=0,
+                match_ability2_casts= 0,
+                match_ultimate_casts= 0
+            )
+        else:
+            stats_row = PlayerMatchStats(
+                match_id=validated_data.matchInfo.matchId,
+                subject=player.subject,
+                score=pms.score,
+                rounds_played=pms.roundsPlayed,
+                kills=pms.kills,
+                deaths=pms.deaths,
+                assists=pms.assists,
+                playtime_millis=pms.playtimeMillis,
+                match_grenade_casts=ac.grenadeCasts,
+                match_ability1_casts=ac.ability1Casts,
+                match_ability2_casts=ac.ability2Casts,
+                match_ultimate_casts=ac.ultimateCasts
+            )
+
         session.add(stats_row)
         logger.debug("Player match stats added for subject: %s", player.subject)
         
@@ -270,54 +290,47 @@ def update_players(session, validated_data: ValorantMatchAPIModel):
         
         # Insert player_behavior_factors
         pb = player.behaviorFactors
-        behavior_row = PlayerBehaviorFactors(
-            match_id=validated_data.matchInfo.matchId,
-            subject=player.subject,
-            afk_rounds=pb.afkRounds,
-            collisions=pb.collisions,
-            comms_rating_recovery=pb.commsRatingRecovery,
-            damage_participation_outgoing=pb.damageParticipationOutgoing,
-            friendly_fire_incoming=pb.friendlyFireIncoming,
-            friendly_fire_outgoing=pb.friendlyFireOutgoing,
-            mouse_movement=pb.mouseMovement,
-            self_damage=pb.selfDamage,
-            stayed_in_spawn_rounds=pb.stayedInSpawnRounds
-        )
+        if pb is None:
+            behavior_row = PlayerBehaviorFactors(
+                match_id=validated_data.matchInfo.matchId,
+                subject=player.subject,
+                afk_rounds=0.0,
+                collisions=0.0,
+                comms_rating_recovery=0,
+                damage_participation_outgoing=0,
+                friendly_fire_incoming=0.0,
+                friendly_fire_outgoing=0.0,
+                mouse_movement=0,
+                self_damage=0.0,
+                stayed_in_spawn_rounds=0.0
+            )
+        else:
+            behavior_row = PlayerBehaviorFactors(
+                match_id=validated_data.matchInfo.matchId,
+                subject=player.subject,
+                afk_rounds=pb.afkRounds,
+                collisions=pb.collisions,
+                comms_rating_recovery=pb.commsRatingRecovery,
+                damage_participation_outgoing=pb.damageParticipationOutgoing,
+                friendly_fire_incoming=pb.friendlyFireIncoming,
+                friendly_fire_outgoing=pb.friendlyFireOutgoing,
+                mouse_movement=pb.mouseMovement,
+                self_damage=pb.selfDamage,
+                stayed_in_spawn_rounds=pb.stayedInSpawnRounds
+            )
+
         session.add(behavior_row)
-        logger.debug("Player behavior factors added for subject: %s", player.subject)
+        logger.debug("Player behavior factors added for subject: %s, match: %s", player.subject, validated_data.matchInfo.matchId)
         
         # Insert combined new player experience details
-        npe = player.newPlayerExperienceDetails
-        
-        # complete_npe = CompleteNewPlayerExperienceDetails(
-        #     subject=player.subject,
-        #     version_string=npe.versionString,
-        #     basic_movement_idle_time_millis=npe.basicMovement.idleTimeMillis,
-        #     basic_movement_objective_complete_time_millis=npe.basicMovement.objectiveCompleteTimeMillis,
-        #     basic_gun_skill_idle_time_millis=npe.basicGunSkill.idleTimeMillis,
-        #     basic_gun_skill_objective_complete_time_millis=npe.basicGunSkill.objectiveCompleteTimeMillis,
-        #     adaptive_bots_idle_time_millis=npe.adaptiveBots.idleTimeMillis,
-        #     adaptive_bots_objective_complete_time_millis=npe.adaptiveBots.objectiveCompleteTimeMillis,
-        #     adaptive_bot_avg_duration_all_attempts=npe.adaptiveBots.adaptiveBotAverageDurationMillisAllAttempts,
-        #     adaptive_bot_avg_duration_first_attempt=npe.adaptiveBots.adaptiveBotAverageDurationMillisFirstAttempt,
-        #     kill_details_first_attempt=npe.adaptiveBots.killDetailsFirstAttempt,
-        #     ability_idle_time_millis=npe.ability.idleTimeMillis,
-        #     ability_objective_complete_time_millis=npe.ability.objectiveCompleteTimeMillis,
-        #     bomb_plant_idle_time_millis=npe.bombPlant.idleTimeMillis,
-        #     bomb_plant_objective_complete_time_millis=npe.bombPlant.objectiveCompleteTimeMillis,
-        #     defend_bomb_site_idle_time_millis=npe.defendBombSite.idleTimeMillis,
-        #     defend_bomb_site_objective_complete_time_millis=npe.defendBombSite.objectiveCompleteTimeMillis,
-        #     defend_bomb_site_success=npe.defendBombSite.success,
-        #     setting_status_is_mouse_sensitivity_default=npe.settingStatus.isMouseSensitivityDefault,
-        #     setting_status_is_crosshair_default=npe.settingStatus.isCrosshairDefault
-        # )
-
+        #The new player experience details are the same for a player across matches since these are logged when a player first joins Valorant.
         #The subject might repeat across matches. Since multiple matches are loaded together parallelly on separate threads, 
         # race conditions can lead to primary key violations on this table 
         # i.e. if a parallel thread has loaded the same subject into the database before the current thread. 
         #A regular session.add() would lead to primary key violations. 
         #Hence making use of postgres' on conflict do nothing to avoid errors.
         #While inserting, if a primary key conflict is found, it will not do anything
+        npe = player.newPlayerExperienceDetails
         complete_npe = insert(CompleteNewPlayerExperienceDetails).values(
         subject=player.subject,
         version_string=npe.versionString,
@@ -497,34 +510,50 @@ def update_teams(session, validated_data: ValorantMatchAPIModel):
     # session.commit()
     logger.info("Teams updated for match_id: %s", validated_data.matchInfo.matchId)
 
-def load_valorant_data_to_database(Session,validated_data):
+def load_valorant_data_to_database(Session,
+                                   json_data, 
+                                   file_name):
 
     session = Session()
-    success_flag=0
+    success_flag=0 #The file is deleted when a success flag of 1 is returned, else it is retained for further debugging
+    
     try:
-        if update_matches(session, validated_data): #This function returns True if the matchID is unique and has been updated, else returns False if the matchID already exists
-            update_premier_match_info(session, validated_data)
-            update_party_rr_penalties(session, validated_data)
-            update_coaches(session, validated_data)
-            update_kills(session, validated_data)
-            update_players(session, validated_data)
-            update_round_results(session, validated_data)
-            update_teams(session, validated_data)
-            logger.info(f"Data successfully loaded into the database for match id- {validated_data.matchInfo.matchId}")
-            print(f"Data successfully loaded into the database for match id- {validated_data.matchInfo.matchId}")
+        validated_data = ValorantMatchAPIModel.model_validate(json_data)
+        if validated_data.matchInfo.isRanked==True:
+            try:
+                if update_matches(session, validated_data): #This function returns True if the matchID is unique and has been updated, else returns False if the matchID already exists
+                    update_premier_match_info(session, validated_data)
+                    update_party_rr_penalties(session, validated_data)
+                    update_coaches(session, validated_data)
+                    update_kills(session, validated_data)
+                    update_players(session, validated_data)
+                    update_round_results(session, validated_data)
+                    update_teams(session, validated_data)
+                    logger.info(f"Data successfully loaded into the database for match id- {validated_data.matchInfo.matchId}")
+                    print(f"Data successfully loaded into the database for match id- {validated_data.matchInfo.matchId}")
+                else:
+                    logger.info(f"Data already exists in the database for match id- {validated_data.matchInfo.matchId}")
+                    print(f"Data already exists in the database for match id- {validated_data.matchInfo.matchId}")
+                success_flag=1 #File will be deleted
+                
+            except SQLAlchemyError as e:
+                session.rollback()
+                logger.error(f"Database error for match id- {validated_data.matchInfo.matchId}: {e}")
+                print(f"Database error for match id- {validated_data.matchInfo.matchId}: {e}")
         else:
-            logger.info(f"Data already exists in the database for match id- {validated_data.matchInfo.matchId}")
-            print(f"Data already exists in the database for match id- {validated_data.matchInfo.matchId}")
-        success_flag=1
-        
-    except SQLAlchemyError as e:
-        session.rollback()
-        logger.error(f"Database error for match id- {validated_data.matchInfo.matchId}: {e}")
-        print(f"Database error for match id- {validated_data.matchInfo.matchId}: {e}")
+            logger.info(f"The json file {file_name} is not a ranked Valorant Match API. The file will not be loaded")
+            print(f"The json file {file_name} is not a ranked Valorant Match API. The file will not be loaded")
+            success_flag=1 #File will be deleted
+
+    except Exception as e:
+        error_message= f"The json file {file_name} could not be loaded due to error- {e}"
+        logger.error(error_message)
+        print(error_message)
+
+
 
     finally:
         session.commit() #If there were no exceptions, commit everything to the database. If there was an exception, nothing will be committed
         session.close()
         
-    
     return success_flag

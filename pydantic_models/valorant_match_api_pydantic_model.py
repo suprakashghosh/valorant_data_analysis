@@ -100,7 +100,7 @@ class playerMatchStats(BaseModel):
     deaths: int
     assists: int
     playtimeMillis: int
-    abilityCasts: matchAbilityCasts #The ability casts for the entire match
+    abilityCasts: Optional[matchAbilityCasts] #The ability casts for the entire match
 
 class BehaviorFactors(BaseModel):
     """
@@ -145,7 +145,7 @@ class Player(BaseModel):
     accountLevel: int
     sessionPlaytimeMinutes: Optional[int]
     xpModifications: Optional[List[XpModification]]
-    behaviorFactors: BehaviorFactors
+    behaviorFactors: Optional[BehaviorFactors]
     newPlayerExperienceDetails: NewPlayerExperienceDetails
 
 class PremierMatchInfo(BaseModel):
@@ -211,7 +211,7 @@ class RoundAbilityCasts(BaseModel):
 
 
 class FinishingDamage(BaseModel):
-    damageType: str
+    damageType: Optional[str] = Field(default='NA')
     damageItem: str
     isSecondaryFireMode: bool
 
