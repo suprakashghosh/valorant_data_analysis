@@ -288,39 +288,39 @@ def update_players(session, validated_data: ValorantMatchAPIModel):
                 session.add(xp_row)
                 logger.debug("XP modification added for subject: %s, modification_id: %s", player.subject, mod.ID)
         
-        # Insert player_behavior_factors
-        pb = player.behaviorFactors
-        if pb is None:
-            behavior_row = PlayerBehaviorFactors(
-                match_id=validated_data.matchInfo.matchId,
-                subject=player.subject,
-                afk_rounds=0.0,
-                collisions=0.0,
-                comms_rating_recovery=0,
-                damage_participation_outgoing=0,
-                friendly_fire_incoming=0.0,
-                friendly_fire_outgoing=0.0,
-                mouse_movement=0,
-                self_damage=0.0,
-                stayed_in_spawn_rounds=0.0
-            )
-        else:
-            behavior_row = PlayerBehaviorFactors(
-                match_id=validated_data.matchInfo.matchId,
-                subject=player.subject,
-                afk_rounds=pb.afkRounds,
-                collisions=pb.collisions,
-                comms_rating_recovery=pb.commsRatingRecovery,
-                damage_participation_outgoing=pb.damageParticipationOutgoing,
-                friendly_fire_incoming=pb.friendlyFireIncoming,
-                friendly_fire_outgoing=pb.friendlyFireOutgoing,
-                mouse_movement=pb.mouseMovement,
-                self_damage=pb.selfDamage,
-                stayed_in_spawn_rounds=pb.stayedInSpawnRounds
-            )
+        # Insert player_behavior_factors- Logs from the initial tutorial that the player does
+        # pb = player.behaviorFactors
+        # if pb is None:
+        #     behavior_row = PlayerBehaviorFactors(
+        #         match_id=validated_data.matchInfo.matchId,
+        #         subject=player.subject,
+        #         afk_rounds=0.0,
+        #         collisions=0.0,
+        #         comms_rating_recovery=0,
+        #         damage_participation_outgoing=0,
+        #         friendly_fire_incoming=0.0,
+        #         friendly_fire_outgoing=0.0,
+        #         mouse_movement=0,
+        #         self_damage=0.0,
+        #         stayed_in_spawn_rounds=0.0
+        #     )
+        # else:
+        #     behavior_row = PlayerBehaviorFactors(
+        #         match_id=validated_data.matchInfo.matchId,
+        #         subject=player.subject,
+        #         afk_rounds=pb.afkRounds,
+        #         collisions=pb.collisions,
+        #         comms_rating_recovery=pb.commsRatingRecovery,
+        #         damage_participation_outgoing=pb.damageParticipationOutgoing,
+        #         friendly_fire_incoming=pb.friendlyFireIncoming,
+        #         friendly_fire_outgoing=pb.friendlyFireOutgoing,
+        #         mouse_movement=pb.mouseMovement,
+        #         self_damage=pb.selfDamage,
+        #         stayed_in_spawn_rounds=pb.stayedInSpawnRounds
+        #     )
 
-        session.add(behavior_row)
-        logger.debug("Player behavior factors added for subject: %s, match: %s", player.subject, validated_data.matchInfo.matchId)
+        # session.add(behavior_row)
+        # logger.debug("Player behavior factors added for subject: %s, match: %s", player.subject, validated_data.matchInfo.matchId)
         
         # Insert combined new player experience details
         #The new player experience details are the same for a player across matches since these are logged when a player first joins Valorant.
@@ -330,52 +330,35 @@ def update_players(session, validated_data: ValorantMatchAPIModel):
         #A regular session.add() would lead to primary key violations. 
         #Hence making use of postgres' on conflict do nothing to avoid errors.
         #While inserting, if a primary key conflict is found, it will not do anything
-        npe = player.newPlayerExperienceDetails
-        complete_npe = insert(CompleteNewPlayerExperienceDetails).values(
-        subject=player.subject,
-        version_string=npe.versionString,
-        basic_movement_idle_time_millis=npe.basicMovement.idleTimeMillis,
-        basic_movement_objective_complete_time_millis=npe.basicMovement.objectiveCompleteTimeMillis,
-        basic_gun_skill_idle_time_millis=npe.basicGunSkill.idleTimeMillis,
-        basic_gun_skill_objective_complete_time_millis=npe.basicGunSkill.objectiveCompleteTimeMillis,
-        adaptive_bots_idle_time_millis=npe.adaptiveBots.idleTimeMillis,
-        adaptive_bots_objective_complete_time_millis=npe.adaptiveBots.objectiveCompleteTimeMillis,
-        adaptive_bot_avg_duration_all_attempts=npe.adaptiveBots.adaptiveBotAverageDurationMillisAllAttempts,
-        adaptive_bot_avg_duration_first_attempt=npe.adaptiveBots.adaptiveBotAverageDurationMillisFirstAttempt,
-        kill_details_first_attempt=npe.adaptiveBots.killDetailsFirstAttempt,
-        ability_idle_time_millis=npe.ability.idleTimeMillis,
-        ability_objective_complete_time_millis=npe.ability.objectiveCompleteTimeMillis,
-        bomb_plant_idle_time_millis=npe.bombPlant.idleTimeMillis,
-        bomb_plant_objective_complete_time_millis=npe.bombPlant.objectiveCompleteTimeMillis,
-        defend_bomb_site_idle_time_millis=npe.defendBombSite.idleTimeMillis,
-        defend_bomb_site_objective_complete_time_millis=npe.defendBombSite.objectiveCompleteTimeMillis,
-        defend_bomb_site_success=npe.defendBombSite.success,
-        setting_status_is_mouse_sensitivity_default=npe.settingStatus.isMouseSensitivityDefault,
-        setting_status_is_crosshair_default=npe.settingStatus.isCrosshairDefault
-    ).on_conflict_do_nothing(index_elements=["subject"])  
+    #     npe = player.newPlayerExperienceDetails
+    #     complete_npe = insert(CompleteNewPlayerExperienceDetails).values(
+    #     subject=player.subject,
+    #     version_string=npe.versionString,
+    #     basic_movement_idle_time_millis=npe.basicMovement.idleTimeMillis,
+    #     basic_movement_objective_complete_time_millis=npe.basicMovement.objectiveCompleteTimeMillis,
+    #     basic_gun_skill_idle_time_millis=npe.basicGunSkill.idleTimeMillis,
+    #     basic_gun_skill_objective_complete_time_millis=npe.basicGunSkill.objectiveCompleteTimeMillis,
+    #     adaptive_bots_idle_time_millis=npe.adaptiveBots.idleTimeMillis,
+    #     adaptive_bots_objective_complete_time_millis=npe.adaptiveBots.objectiveCompleteTimeMillis,
+    #     adaptive_bot_avg_duration_all_attempts=npe.adaptiveBots.adaptiveBotAverageDurationMillisAllAttempts,
+    #     adaptive_bot_avg_duration_first_attempt=npe.adaptiveBots.adaptiveBotAverageDurationMillisFirstAttempt,
+    #     kill_details_first_attempt=npe.adaptiveBots.killDetailsFirstAttempt,
+    #     ability_idle_time_millis=npe.ability.idleTimeMillis,
+    #     ability_objective_complete_time_millis=npe.ability.objectiveCompleteTimeMillis,
+    #     bomb_plant_idle_time_millis=npe.bombPlant.idleTimeMillis,
+    #     bomb_plant_objective_complete_time_millis=npe.bombPlant.objectiveCompleteTimeMillis,
+    #     defend_bomb_site_idle_time_millis=npe.defendBombSite.idleTimeMillis,
+    #     defend_bomb_site_objective_complete_time_millis=npe.defendBombSite.objectiveCompleteTimeMillis,
+    #     defend_bomb_site_success=npe.defendBombSite.success,
+    #     setting_status_is_mouse_sensitivity_default=npe.settingStatus.isMouseSensitivityDefault,
+    #     setting_status_is_crosshair_default=npe.settingStatus.isCrosshairDefault
+    # ).on_conflict_do_nothing(index_elements=["subject"])  
         
         
-        session.execute(complete_npe)
+    #     session.execute(complete_npe)
         session.flush() #Check that any new primary keys generated during the session are updated.
         
-        #New player experience details would only happen once per subject presumably. 
-        # Therefore do not insert if the entity already exists.
-        
-    #     existing_npe = session.query(CompleteNewPlayerExperienceDetails).filter_by(subject=player.subject).first() #Check if the entity exists
-    #     if existing_npe is None:
-    #         try:
-    #             # session.merge(complete_npe) #Using session.merge instead of session.add because in this particular table, race conditions with other threads often lead to primary key violations despite checks. session.merge causes an upsert, thereby bypassing primary key violations
-    #             session.execute(stmt)
-    #             session.flush() #Sending changes to the database (without committing) so that the primary key field can be updated and violations can be checked.
-    #             logger.debug("New player experience details added for subject: %s", player.subject)
-    #         except IntegrityError as e:
-    #             if 'violates unique constraint' in str(e.orig):
-    #                 logger.debug("Primary key violation for new player experience details, subject: %s", player.subject)
-    #             else:
-    #                 logger.debug(f"Insertion issue into new player experience details: {e}")
-    #     else:
-    #         logger.debug("New player experience details already exist for subject: %s", player.subject)
-    # # session.commit()
+
     logger.info("Players updated for match_id: %s", validated_data.matchInfo.matchId)
 
 def update_round_results(session, validated_data: ValorantMatchAPIModel):
