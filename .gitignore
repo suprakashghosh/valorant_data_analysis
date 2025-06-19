@@ -1,6 +1,8 @@
 New folder/*
 files_in_directory.txt
 mojo/*
+env/*
+data/*
 *.zip
 *.pyc
 logs/*

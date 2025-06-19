@@ -110,15 +110,15 @@ class BehaviorFactors(BaseModel):
     friendly fire incidents (both incoming and outgoing), mouse movement, self-inflicted damage,
     and the number of rounds the player stayed in spawn.
     """
-    afkRounds: float
-    collisions: float
-    commsRatingRecovery: int
-    damageParticipationOutgoing: int
-    friendlyFireIncoming: float
-    friendlyFireOutgoing: float
-    mouseMovement: int
-    selfDamage: float
-    stayedInSpawnRounds: float
+    afkRounds: Optional[float]
+    collisions: Optional[float]
+    commsRatingRecovery: Optional[int]
+    damageParticipationOutgoing: Optional[int]
+    friendlyFireIncoming: Optional[float]
+    friendlyFireOutgoing: Optional[float]
+    mouseMovement: Optional[int]
+    selfDamage: Optional[float]
+    stayedInSpawnRounds: Optional[float]
 
 class Player(BaseModel):
     """
